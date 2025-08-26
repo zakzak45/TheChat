@@ -1,5 +1,4 @@
 import {  useEffect,useState } from "react";
-import axios from 'axios'
 
 
 
@@ -11,7 +10,7 @@ const Chat = () => {
 
 const fetchMessages = async () => {
 		try {
-			const response = await fetch('http://localhost:3000/messages');
+			const response = await fetch('https://thechat-piox.onrender.com/messages');
 			const data = await response.json();
 			setMessages(data);
 		} catch (error) {
@@ -21,7 +20,7 @@ const fetchMessages = async () => {
 
 	const sendMessage = async () => {
 		try {
-			await fetch('http://localhost:3000/messages', {
+			await fetch('https://thechat-piox.onrender.com/messages', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
