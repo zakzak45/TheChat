@@ -1,10 +1,12 @@
 const express = require('express')
+const dotenv = require('dotenv')
 const mongoose = require('mongoose')
 const ChatMessage = require('./models/Chat.js')
 const cors = require('cors')
+const authRoutes = require('./Routes/AuthRoute.js')
 
 
-
+dotenv.config()
 const app = express()
 app.use(cors())
 app.use(express.json())
@@ -15,6 +17,9 @@ mongoose.connect('mongodb+srv://zayne:khunjuliwe@cluster0.wuri8yj.mongodb.net/?r
 }).catch((err)=>{
     console.log("something happened "+err)
 })
+
+app.use('/messages',authRoutes)
+
 app.get('/messages',async (req,res)=>{
     try{
      const messages = await ChatMessage.find()

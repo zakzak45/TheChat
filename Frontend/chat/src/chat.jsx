@@ -1,5 +1,5 @@
 import {  useEffect,useState } from "react";
-
+import './chat.css'
 
 
 const Chat = () => {
@@ -7,6 +7,7 @@ const Chat = () => {
     const [message,setMessage] = useState("")
     const [user,setUser] = useState("")
     
+const token = localStorage.getItem("token");
 
 const fetchMessages = async () => {
 		try {
@@ -46,7 +47,7 @@ const fetchMessages = async () => {
 		}, 2000);
 
 		return () => clearInterval(interval);
-	}, []); // Run only once on mount
+	}, [token]); // Run only once on mount
 
 	return (
 		<div>
