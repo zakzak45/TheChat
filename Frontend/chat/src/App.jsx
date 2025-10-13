@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Chat from "./chat.jsx";
-import AuthPage from "./pages/LoginSignuPage.jsx";
-import HomePage from "./pages/HomePage.jsx";
+import AuthPage from "./LoginSignuPage.jsx";
+import HomePage from "./HomePage.jsx";
 import { useAuth } from "./useAuth.jsx";
 
 function App() {

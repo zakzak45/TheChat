@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../useAuth.jsx";
+import { useAuth } from "./useAuth.jsx";
 import "./LoginSignup.css";   
 
 export default function AuthPage() {
