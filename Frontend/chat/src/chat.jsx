@@ -51,6 +51,7 @@ const Chat = () => {
     const saved = sessionStorage.getItem("compactMode");
     return saved !== null ? JSON.parse(saved) : false;
   });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
   const token = sessionStorage.getItem("token");
 
@@ -275,12 +276,24 @@ const Chat = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  // Handle mobile viewport changes
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 480);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="container">
       {showIntro && (
         <div className="intro-overlay">
           <img src="/animeGirl.gif" alt="Waving Anime" className="intro-gif" />
-          <h2 className="intro-text">Welcome back, {user}! </h2>
+          <h2 className="intro-text">
+            {isMobile ? `Welcome back, ${user.split(' ')[0]}!` : `Welcome back, ${user}!`}
+          </h2>
         </div>
       )}
 
