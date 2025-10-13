@@ -88,8 +88,26 @@ const Chat = () => {
 
   const handleProfilePictureUpload = async (file) => {
     try {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('profilePicture', file);
+
+      console.log('Uploading profile picture...', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
 
       const response = await fetch('https://brochat2.onrender.com/profile-picture', {
         method: 'POST',
@@ -99,18 +117,21 @@ const Chat = () => {
         body: formData
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
+
       if (response.ok) {
         setCurrentUser(data.user);
-
-        fetchMessages();
+        fetchMessages(); // Refresh messages to update profile pictures
         alert('Profile picture updated successfully!');
       } else {
+        console.error('Upload failed:', data);
         alert(data.error || 'Failed to upload profile picture');
       }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
-      alert('Failed to upload profile picture');
+      alert('Network error. Please check your connection and try again.');
     }
   };
   const sendMessage = async () => {

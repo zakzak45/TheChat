@@ -25,7 +25,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177","https://thechat-1.onrender.com"],
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "http://localhost:5177", "https://thechat-1.onrender.com", "https://thechat-frontend.onrender.com", "https://brochat-frontend.onrender.com"],
     methods: ["GET", "POST"]
   }
 });
@@ -189,7 +189,7 @@ app.post("/messages", authenticateToken, upload.single("file"), async (req, res)
     }
 
     let fileUrl = null;
-    if (req.file) fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+    if (req.file) fileUrl = `https://brochat2.onrender.com/uploads/${req.file.filename}`;
 
     // Analyze emotion if there's a text message
     let emotion = null;
@@ -294,7 +294,7 @@ app.post("/profile-picture", authenticateToken, upload.single("profilePicture"),
       return res.status(400).json({ error: "Please upload an image file" });
     }
 
-    const profilePictureUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+    const profilePictureUrl = `https://brochat2.onrender.com/uploads/${req.file.filename}`;
     
   
     const user = await User.findByIdAndUpdate(
