@@ -15,8 +15,8 @@ export default function AuthPage() {
     e.preventDefault();
 
     const url = isLogin
-      ? "http://localhost:3000/login"
-      : "http://localhost:3000/signup";
+      ? "https://brochat2.onrender.com/login"
+      : "https://brochat2.onrender.com/signup";
 
     const payload = isLogin
       ? { email, password }

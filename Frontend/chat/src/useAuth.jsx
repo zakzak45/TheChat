@@ -14,7 +14,7 @@ export const useAuthLogic = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
 
-  
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = sessionStorage.getItem('token');
@@ -25,7 +25,7 @@ export const useAuthLogic = () => {
       }
 
       try {
-        const response = await fetch('http://localhost:3000/validate-token', {
+        const response = await fetch('https://brochat2.onrender.com/validate-token', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -38,10 +38,10 @@ export const useAuthLogic = () => {
         if (data.valid) {
           setIsAuthenticated(true);
           setUser(data.user);
-         
+
           sessionStorage.setItem('user', JSON.stringify(data.user));
         } else {
-         
+
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('user');
           setIsAuthenticated(false);
@@ -72,11 +72,11 @@ export const useAuthLogic = () => {
   const logout = (navigate) => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
-    sessionStorage.removeItem('chatUser'); 
+    sessionStorage.removeItem('chatUser');
     setIsAuthenticated(false);
     setUser(null);
 
-    
+
     if (navigate) {
       navigate('/', { replace: true });
     }

@@ -56,7 +56,7 @@ const Chat = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch('http://localhost:3000/messages', {
+      const response = await fetch('https://brochat2.onrender.com/messages', {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem("token")}`
         }
@@ -70,7 +70,7 @@ const Chat = () => {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('http://localhost:3000/me', {
+      const response = await fetch('https://brochat2.onrender.com/me', {
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem("token")}`
         }
@@ -91,7 +91,7 @@ const Chat = () => {
       const formData = new FormData();
       formData.append('profilePicture', file);
 
-      const response = await fetch('http://localhost:3000/profile-picture', {
+      const response = await fetch('https://brochat2.onrender.com/profile-picture', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem("token")}`
@@ -102,7 +102,7 @@ const Chat = () => {
       const data = await response.json();
       if (response.ok) {
         setCurrentUser(data.user);
-       
+
         fetchMessages();
         alert('Profile picture updated successfully!');
       } else {
@@ -117,11 +117,11 @@ const Chat = () => {
     if (!message.trim() && !file) return;
     try {
       const formData = new FormData();
-      
+
       formData.append("message", message);
       if (file) formData.append("file", file);
 
-      await fetch('http://localhost:3000/messages', {
+      await fetch('https://brochat2.onrender.com/messages', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${sessionStorage.getItem("token")}`
@@ -130,7 +130,7 @@ const Chat = () => {
       });
       setMessage('');
       setFile(null);
-      
+
     } catch (error) {
       console.error('Error sending message:', error);
     }
@@ -145,7 +145,7 @@ const Chat = () => {
 
 
   const handleLogout = () => {
-    logout(navigate); 
+    logout(navigate);
   };
 
   const handleThemeChange = (newTheme) => {
@@ -202,21 +202,21 @@ const Chat = () => {
     fetchCurrentUser();
     fetchMessages();
 
-   
-    socketRef.current = io('http://localhost:3000');
 
-   
+    socketRef.current = io('https://brochat2.onrender.com');
+
+
     socketRef.current.emit('authenticate', token);
 
-    
+
     socketRef.current.on('newMessage', (message) => {
       setMessages(prev => [...prev, message]);
     });
 
-   
+
     socketRef.current.on('notification', (notification) => {
-      if (notifications) { 
-        
+      if (notifications) {
+
         const isOwnMessage = notification.senderId === currentUserId;
         const enhancedNotification = {
           ...notification,
@@ -263,7 +263,7 @@ const Chat = () => {
         </div>
       )}
 
-   
+
       <div className="notifications-container">
         {notificationQueue.map((notification, index) => (
           <div key={index} className={`notification-toast ${notification.isOwnMessage ? 'own-message' : ''}`}>
