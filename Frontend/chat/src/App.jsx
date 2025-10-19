@@ -68,24 +68,32 @@ function App() {
   if (isLoading) {
     return (
       <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
+        width: '100vw',
         height: '100vh',
+        backgroundColor: '#1a1a2e',
         fontSize: '18px',
-        fontFamily: 'Arial, sans-serif'
+        fontFamily: 'Arial, sans-serif',
+        zIndex: 9999
       }}>
-        <div>
-          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ marginBottom: '20px', color: '#fff', fontSize: '20px' }}>
             Loading ChatRoom...
           </div>
           <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #3498db',
+            width: '50px',
+            height: '50px',
+            border: '4px solid rgba(255, 255, 255, 0.1)',
+            borderTop: '4px solid #7c4dff',
             borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
+            animation: 'spin 0.8s linear infinite',
             margin: '0 auto'
           }}></div>
           <style>{`
