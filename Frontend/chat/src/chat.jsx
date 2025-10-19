@@ -356,7 +356,7 @@ const Chat = () => {
         <div className="intro-overlay">
           <img src="/animeGirl.gif" alt="Waving Anime" className="intro-gif" />
           <h2 className="intro-text">
-            {isMobile ? `Welcome back, ${user.split(' ')[0]}!` : `Welcome back, ${user}!`}
+            {isMobile ? `Welcome, ${user.split(' ')[0]}!` : `Welcome, ${user}!`}
           </h2>
         </div>
       )}

@@ -250,7 +250,9 @@ app.post("/messages", authenticateToken, upload.single("file"), async (req, res)
     const messageWithUserData = {
       ...newMessage.toObject(),
       user: authenticatedUser.username,
-      userProfilePicture: authenticatedUser.profilePicture
+      userProfilePicture: authenticatedUser.profilePicture,
+      seenCount: 1, // Sender has seen it
+      seenByCurrentUser: false // Will be true for sender on their end
     };
     
     io.emit('newMessage', messageWithUserData);
