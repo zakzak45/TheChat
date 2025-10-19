@@ -36,6 +36,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Create uploads directory if it doesn't exist
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+  console.log('✅ Created uploads directory');
+}
+
+// Serve static files from uploads directory with CORS
+app.use("/uploads", express.static(uploadDir, {
+  setHeaders: (res, path) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
+
 // Web Push
 const webpush = require('web-push');
 // Load VAPID keys from env or generate new ones and print a warning
@@ -204,11 +219,7 @@ const messageSchema = new mongoose.Schema({
 
 const Message = mongoose.model("Message", messageSchema);
 
-
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-
+// Multer storage configuration (uploadDir already created at top of file)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
@@ -457,9 +468,6 @@ app.post("/cleanup/messages", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
-
-app.use("/uploads", express.static(uploadDir));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
