@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth.jsx";
-import "./LoginSignup.css";   
+import "./LoginSignup.css";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
     const url = isLogin
       ? "https://brochat2.onrender.com/login"
@@ -23,9 +27,6 @@ export default function AuthPage() {
       : { username, email, password };
 
     try {
-      console.log('Sending request to:', url);
-      console.log('With payload:', payload);
-
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,22 +34,22 @@ export default function AuthPage() {
       });
 
       const data = await res.json();
-      console.log('Response:', data);
 
       if (data.token) {
-        console.log('Authentication successful');
-        // Use the new login method from useAuth
+        // Store data and navigate immediately
         login(data.token, data.user);
         sessionStorage.setItem("chatUser", data.user.username || email);
-        console.log('Navigating to chat');
+
+        // Navigate immediately without waiting
         navigate("/chat", { replace: true });
       } else {
-        console.error('Authentication failed:', data.message);
-        alert(data.message || "Authentication failed");
+        setError(data.message || "Authentication failed");
       }
     } catch (error) {
       console.error('Error during authentication:', error);
-      alert("Network error. Please try again.");
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,6 +65,7 @@ export default function AuthPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              disabled={loading}
             />
           )}
           <input
@@ -72,6 +74,7 @@ export default function AuthPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
           <input
             type="password"
@@ -79,22 +82,39 @@ export default function AuthPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
-          <button type="submit" className="submit-btn">
-            {isLogin ? "Login" : "Signup"}
+
+          {error && <div className="error-message">{error}</div>}
+
+          <button type="submit" className="submit-btn" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                {isLogin ? "Logging in..." : "Signing up..."}
+              </>
+            ) : (
+              isLogin ? "Login" : "Signup"
+            )}
           </button>
         </form>
 
-        <p className="switch-text">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+        <div className="switch-text">
+          <p style={{ margin: 0 }}>
+            {isLogin ? "Don't have an account?" : "Already have an account?"}
+          </p>
           <button
             type="button"
             className="switch-btn"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError("");
+            }}
+            disabled={loading}
           >
-            {isLogin ? "Signup here" : "Login here"}
+            {isLogin ? "Create Account" : "Back to Login"}
           </button>
-        </p>
+        </div>
       </div>
     </div>
   );

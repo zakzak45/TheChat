@@ -248,10 +248,17 @@ const Chat = () => {
 
         setNotificationQueue(prev => [...prev, enhancedNotification]);
 
-        // Auto remove notification after 5 seconds
+        // Play WhatsApp-like notification sound
+        if (soundEnabled && !isOwnMessage) {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLYiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyzHksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgc7y2Ik3CBlou+3nn00QDFCn4/C2YxwGOJLX8sx5LAUkd8fw3ZBAC');
+          audio.volume = 0.5;
+          audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        // Auto remove notification after 8 seconds (WhatsApp-like duration)
         setTimeout(() => {
           setNotificationQueue(prev => prev.filter(n => n !== enhancedNotification));
-        }, 5000);
+        }, 8000);
       }
     });    // Listen for online users updates
     socketRef.current.on('userCountUpdate', (data) => {
@@ -269,7 +276,7 @@ const Chat = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [token, notifications, currentUserId]);
+  }, [token, notifications, currentUserId, soundEnabled]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowIntro(false), 2500);
@@ -285,6 +292,13 @@ const Chat = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Refresh user data when profile is opened
+  useEffect(() => {
+    if (showProfile) {
+      fetchCurrentUser();
+    }
+  }, [showProfile]);
 
   return (
     <div className="container">
@@ -357,9 +371,10 @@ const Chat = () => {
                   <div className="current-profile-picture">
                     {currentUser?.profilePicture ? (
                       <img
-                        src={currentUser.profilePicture}
+                        src={`${currentUser.profilePicture}?t=${Date.now()}`}
                         alt="Profile"
                         className="profile-picture-display"
+                        key={currentUser.profilePicture}
                       />
                     ) : (
                       <div className="profile-picture-placeholder">
