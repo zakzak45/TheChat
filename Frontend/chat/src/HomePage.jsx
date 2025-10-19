@@ -15,7 +15,7 @@ const HomePage = () => {
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
-  }, []);
+  }, [theme]);
 
   const features = [
     {
@@ -101,29 +101,6 @@ const HomePage = () => {
             <a href="/chat" className="btn btn-secondary">
               Try Demo
             </a>
-          </div>
-        </div>
-        <div className="hero-visual">
-          <div className="chat-bubble bubble-1">
-            <div className="bubble-avatar">👋</div>
-            <div className="bubble-content">
-              <strong>Zayne</strong>
-              <p>Sup!</p>
-            </div>
-          </div>
-          <div className="chat-bubble bubble-2">
-            <div className="bubble-avatar">🎉</div>
-            <div className="bubble-content">
-              <strong>Goat</strong>
-              <p>This is cool!</p>
-            </div>
-          </div>
-          <div className="chat-bubble bubble-3">
-            <div className="bubble-avatar">✨</div>
-            <div className="bubble-content">
-              <strong>Mike</strong>
-              <p>How you doing bro!</p>
-            </div>
           </div>
         </div>
       </section>
