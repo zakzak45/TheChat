@@ -36,6 +36,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Web Push
+const webpush = require('web-push');
+// Load VAPID keys from env or generate new ones and print a warning
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
+if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
+  console.warn('VAPID keys are missing in environment. Web Push will not work until keys are provided.');
+} else {
+  webpush.setVapidDetails(
+    'mailto:admin@thechat.example',
+    VAPID_PUBLIC,
+    VAPID_PRIVATE
+  );
+}
+
+// Simple in-memory subscriptions store (replace with DB for production)
+const subscriptions = new Map();
+
+app.get('/vapidPublicKey', (req, res) => {
+  if (!VAPID_PUBLIC) return res.status(500).json({ error: 'VAPID key not configured' });
+  res.json({ publicKey: VAPID_PUBLIC });
+});
+
 
 const User = require('./models/User');
 const authRoutes = require('./Routes/AuthRoute');
@@ -144,6 +167,19 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
+// Push notification subscription endpoints (must be after authenticateToken is defined)
+app.post('/subscribe', authenticateToken, (req, res) => {
+  const sub = req.body.subscription;
+  if (!sub) return res.status(400).json({ error: 'Subscription required' });
+  subscriptions.set(req.user.id, sub);
+  res.json({ message: 'Subscribed' });
+});
+
+app.post('/unsubscribe', authenticateToken, (req, res) => {
+  subscriptions.delete(req.user.id);
+  res.json({ message: 'Unsubscribed' });
+});
+
 
 const messageSchema = new mongoose.Schema({
   user: { type: String, required: true },      
@@ -226,6 +262,28 @@ app.post("/messages", authenticateToken, upload.single("file"), async (req, res)
       timestamp: new Date(),
       senderId: authenticatedUser._id.toString() // Add sender ID so frontend can handle it
     });
+
+    // Also send web-push notifications to subscribed users
+    if (VAPID_PUBLIC && VAPID_PRIVATE) {
+      const payload = JSON.stringify({
+        title: 'New message',
+        body: `${authenticatedUser.username}: ${message ? message.slice(0, 100) : 'Sent a file'}`,
+        icon: authenticatedUser.profilePicture || '/favicon.ico',
+        url: '/chat'
+      });
+
+      subscriptions.forEach((sub, userId) => {
+        try {
+          webpush.sendNotification(sub, payload).catch(err => {
+            console.error('Push error for user', userId, err);
+            // remove invalid subscription
+            if (err.statusCode === 410 || err.statusCode === 404) subscriptions.delete(userId);
+          });
+        } catch (err) {
+          console.error('Push send exception:', err);
+        }
+      });
+    }
 
 
     

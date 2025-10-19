@@ -220,6 +220,15 @@ const Chat = () => {
     document.body.classList.toggle('compact-mode', compactMode);
   }, [compactMode]);
 
+  // Request browser notification permission
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('Notification permission:', permission);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     fetchCurrentUser();
     fetchMessages();
@@ -233,6 +242,11 @@ const Chat = () => {
 
     socketRef.current.on('newMessage', (message) => {
       setMessages(prev => [...prev, message]);
+      
+      // Update page title if user is not focused on the page
+      if (document.hidden && message.user !== user) {
+        document.title = '(1) New Message - ChatRoom';
+      }
     });
 
 
@@ -253,6 +267,30 @@ const Chat = () => {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLYiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyzHksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgc7y2Ik3CBlou+3nn00QDFCn4/C2YxwGOJLX8sx5LAUkd8fw3ZBAC');
           audio.volume = 0.5;
           audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        // Show browser notification (works even when tab is not focused)
+        if (!isOwnMessage && 'Notification' in window && Notification.permission === 'granted') {
+          // Only show if page is not visible or user is in another tab
+          if (document.hidden || !document.hasFocus()) {
+            const browserNotification = new Notification('New Message - ChatRoom', {
+              body: `${notification.user}: ${notification.message}`,
+              icon: notification.profilePicture || '/favicon.ico',
+              badge: '/favicon.ico',
+              tag: 'chat-message', // Prevents duplicate notifications
+              requireInteraction: false,
+              silent: !soundEnabled, // Use system sound if enabled
+            });
+
+            // Click notification to focus the window
+            browserNotification.onclick = () => {
+              window.focus();
+              browserNotification.close();
+            };
+
+            // Auto close after 6 seconds
+            setTimeout(() => browserNotification.close(), 6000);
+          }
         }
 
         // Auto remove notification after 8 seconds (WhatsApp-like duration)
@@ -441,6 +479,36 @@ const Chat = () => {
                     <span className="slider"></span>
                   </label>
                 </div>
+                {'Notification' in window && (
+                  <div className="setting-item">
+                    <div className="setting-label">
+                      <Bell size={18} />
+                      <span>Desktop Notifications</span>
+                    </div>
+                    <button
+                      className="permission-button"
+                      onClick={async () => {
+                        if (Notification.permission === 'denied') {
+                          alert('Please enable notifications in your browser settings');
+                        } else if (Notification.permission === 'default') {
+                          await Notification.requestPermission();
+                        }
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        background: Notification.permission === 'granted' ? '#25D366' : '#667eea',
+                        color: 'white'
+                      }}
+                    >
+                      {Notification.permission === 'granted' ? '✓ Enabled' :
+                        Notification.permission === 'denied' ? 'Blocked' : 'Enable'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Appearance */}
