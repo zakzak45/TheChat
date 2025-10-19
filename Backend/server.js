@@ -192,6 +192,7 @@ const messageSchema = new mongoose.Schema({
     score: Number,      
     emoji: String       
   },
+  seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Track who has seen this message
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -239,7 +240,8 @@ app.post("/messages", authenticateToken, upload.single("file"), async (req, res)
       message: message || "",
       fileUrl,
       fileName: req.file ? req.file.originalname : null,
-      emotion: emotion
+      emotion: emotion,
+      seenBy: [authenticatedUser._id] // Sender automatically sees their own message
     });
 
     await newMessage.save();
@@ -305,21 +307,58 @@ app.get("/messages", authenticateToken, async (req, res) => {
         if (!msg.userId) {
           return {
             ...msg.toObject(),
-            userProfilePicture: null 
+            userProfilePicture: null,
+            seenByCurrentUser: false,
+            seenCount: msg.seenBy ? msg.seenBy.length : 0
           };
         }
         
         const user = await User.findById(msg.userId).select('username profilePicture');
+        const seenByCurrentUser = msg.seenBy && msg.seenBy.some(id => id.toString() === req.user.id);
+        
         return {
           ...msg.toObject(),
           user: user ? user.username : msg.user, 
-          userProfilePicture: user ? user.profilePicture : null 
+          userProfilePicture: user ? user.profilePicture : null,
+          seenByCurrentUser,
+          seenCount: msg.seenBy ? msg.seenBy.length : 0
         };
       })
     );
 
     
     res.json(messagesWithCurrentUserData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Mark messages as seen
+app.post("/messages/mark-seen", authenticateToken, async (req, res) => {
+  try {
+    const { messageIds } = req.body;
+    const userId = req.user.id;
+
+    if (!messageIds || !Array.isArray(messageIds)) {
+      return res.status(400).json({ error: "messageIds array required" });
+    }
+
+    // Update all messages to add current user to seenBy array if not already there
+    await Message.updateMany(
+      { 
+        _id: { $in: messageIds },
+        seenBy: { $ne: userId } // Only update if user hasn't seen it yet
+      },
+      { 
+        $addToSet: { seenBy: userId } // Add user ID to seenBy array
+      }
+    );
+
+    // Emit socket event to notify other users that messages were seen
+    io.emit('messages-seen', { userId, messageIds });
+
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });

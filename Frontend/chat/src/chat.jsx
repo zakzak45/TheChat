@@ -79,11 +79,24 @@ const Chat = () => {
       const userData = await response.json();
       setUser(userData.username);
       setCurrentUser(userData);
-      setCurrentUserId(userData._id);
+      setCurrentUserId(userData.id);
     } catch (error) {
-      console.error('Error fetching user:', error);
-      setUser("User");
-      setCurrentUser(null);
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  const markMessagesAsSeen = async (messageIds) => {
+    try {
+      await fetch('https://brochat2.onrender.com/messages/mark-seen', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem("token")}`
+        },
+        body: JSON.stringify({ messageIds })
+      });
+    } catch (error) {
+      console.error('Error marking messages as seen:', error);
     }
   };
 
@@ -220,15 +233,6 @@ const Chat = () => {
     document.body.classList.toggle('compact-mode', compactMode);
   }, [compactMode]);
 
-  // Request browser notification permission
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        console.log('Notification permission:', permission);
-      });
-    }
-  }, []);
-
   useEffect(() => {
     fetchCurrentUser();
     fetchMessages();
@@ -242,11 +246,20 @@ const Chat = () => {
 
     socketRef.current.on('newMessage', (message) => {
       setMessages(prev => [...prev, message]);
-      
-      // Update page title if user is not focused on the page
-      if (document.hidden && message.user !== user) {
-        document.title = '(1) New Message - ChatRoom';
-      }
+    });
+
+    // Listen for messages-seen event
+    socketRef.current.on('messages-seen', ({ userId, messageIds }) => {
+      setMessages(prev => prev.map(msg => {
+        if (messageIds.includes(msg._id)) {
+          return {
+            ...msg,
+            seenCount: (msg.seenCount || 0) + 1,
+            seenBy: [...(msg.seenBy || []), userId]
+          };
+        }
+        return msg;
+      }));
     });
 
 
@@ -267,30 +280,6 @@ const Chat = () => {
           const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLYiTcIGWi77eefTRAMUKfj8LZjHAY4ktfyzHksBSR3x/DdkEAKFF606+uoVRQKRp/g8r5sIQUrgc7y2Ik3CBlou+3nn00QDFCn4/C2YxwGOJLX8sx5LAUkd8fw3ZBAC');
           audio.volume = 0.5;
           audio.play().catch(e => console.log('Audio play failed:', e));
-        }
-
-        // Show browser notification (works even when tab is not focused)
-        if (!isOwnMessage && 'Notification' in window && Notification.permission === 'granted') {
-          // Only show if page is not visible or user is in another tab
-          if (document.hidden || !document.hasFocus()) {
-            const browserNotification = new Notification('New Message - ChatRoom', {
-              body: `${notification.user}: ${notification.message}`,
-              icon: notification.profilePicture || '/favicon.ico',
-              badge: '/favicon.ico',
-              tag: 'chat-message', // Prevents duplicate notifications
-              requireInteraction: false,
-              silent: !soundEnabled, // Use system sound if enabled
-            });
-
-            // Click notification to focus the window
-            browserNotification.onclick = () => {
-              window.focus();
-              browserNotification.close();
-            };
-
-            // Auto close after 6 seconds
-            setTimeout(() => browserNotification.close(), 6000);
-          }
         }
 
         // Auto remove notification after 8 seconds (WhatsApp-like duration)
@@ -330,6 +319,29 @@ const Chat = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Mark unread messages as seen when they're visible
+  useEffect(() => {
+    if (messages.length > 0 && currentUserId) {
+      const unseenMessages = messages.filter(msg =>
+        msg.userId !== currentUserId && // Not sent by me
+        !msg.seenByCurrentUser // Not seen by me yet
+      );
+
+      if (unseenMessages.length > 0) {
+        const unseenIds = unseenMessages.map(msg => msg._id);
+        markMessagesAsSeen(unseenIds);
+
+        // Update local state immediately
+        setMessages(prev => prev.map(msg => {
+          if (unseenIds.includes(msg._id)) {
+            return { ...msg, seenByCurrentUser: true };
+          }
+          return msg;
+        }));
+      }
+    }
+  }, [messages.length, currentUserId]);
 
   // Refresh user data when profile is opened
   useEffect(() => {
@@ -479,36 +491,6 @@ const Chat = () => {
                     <span className="slider"></span>
                   </label>
                 </div>
-                {'Notification' in window && (
-                  <div className="setting-item">
-                    <div className="setting-label">
-                      <Bell size={18} />
-                      <span>Desktop Notifications</span>
-                    </div>
-                    <button
-                      className="permission-button"
-                      onClick={async () => {
-                        if (Notification.permission === 'denied') {
-                          alert('Please enable notifications in your browser settings');
-                        } else if (Notification.permission === 'default') {
-                          await Notification.requestPermission();
-                        }
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        background: Notification.permission === 'granted' ? '#25D366' : '#667eea',
-                        color: 'white'
-                      }}
-                    >
-                      {Notification.permission === 'granted' ? '✓ Enabled' :
-                        Notification.permission === 'denied' ? 'Blocked' : 'Enable'}
-                    </button>
-                  </div>
-                )}
               </div>
 
               {/* Appearance */}
@@ -594,6 +576,11 @@ const Chat = () => {
                         {msg.emotion.emoji}
                       </span>
                     )}
+                    {msg.userId === currentUserId && (
+                      <span className="seen-indicator" title={`Seen by ${msg.seenCount || 0} people`}>
+                        {msg.seenCount > 1 ? '✓✓' : '✓'}
+                      </span>
+                    )}
                   </div>
                   <div className="message-content">
                     {msg.message && <span className="message-text">{msg.message}</span>}
@@ -607,6 +594,15 @@ const Chat = () => {
                       )
                     )}
                   </div>
+                  {msg.userId === currentUserId && (
+                    <div className="message-status">
+                      {msg.seenCount > 1 ? (
+                        <span className="seen-text">Seen by {msg.seenCount - 1} {msg.seenCount === 2 ? 'person' : 'people'}</span>
+                      ) : (
+                        <span className="unseen-text">Sent</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </li>
             ))}

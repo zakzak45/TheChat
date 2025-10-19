@@ -928,6 +928,29 @@ input:checked+.slider:before {
   display: inline-block;
 }
 
+.seen-indicator {
+  font-size: 12px;
+  margin-left: auto;
+  color: #4fc3f7;
+  font-weight: bold;
+}
+
+.message-status {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  text-align: right;
+}
+
+.seen-text {
+  color: #4fc3f7;
+}
+
+.unseen-text {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
 /* === Header Stats === */
 .header-stats {
   display: flex;
