@@ -14,7 +14,12 @@ router.post('/signup', async (req, res) => {
     const token = newUser.generateToken();
     res.status(201).json({
       token,
-      user: { id: newUser._id, username, email }
+      user: { 
+        id: newUser._id, 
+        username, 
+        email,
+        profilePicture: newUser.profilePicture 
+      }
     });
   } catch (error) {
     console.error(error);
@@ -37,7 +42,12 @@ router.post('/login', async (req, res) => {
     const token = user.generateToken();
     res.status(200).json({
       token: token,
-      user: { id: user._id, username: user.username, email: user.email }
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        profilePicture: user.profilePicture
+      }
     });
   } catch (error) {
     console.error(error);
@@ -62,7 +72,12 @@ router.post('/validate-token', async (req, res) => {
 
     res.status(200).json({
       valid: true,
-      user: { id: user._id, username: user.username, email: user.email }
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        profilePicture: user.profilePicture
+      }
     });
   } catch (error) {
     res.status(400).json({ valid: false, message: 'Invalid token' });
