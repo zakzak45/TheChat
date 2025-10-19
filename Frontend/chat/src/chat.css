@@ -922,6 +922,13 @@ input:checked+.slider:before {
   margin-bottom: 5px;
 }
 
+.message-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  font-weight: normal;
+}
+
 .emotion-indicator {
   font-size: 16px;
   cursor: help;

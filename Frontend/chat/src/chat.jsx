@@ -571,6 +571,9 @@ const Chat = () => {
                 <div className="message-body">
                   <div className="message-header">
                     <strong className="message-name">{msg.user}</strong>
+                    <span className="message-time">
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                     {msg.emotion && showEmotions && (
                       <span className="emotion-indicator" title={`${msg.emotion.sentiment} (${msg.emotion.score})`}>
                         {msg.emotion.emoji}
