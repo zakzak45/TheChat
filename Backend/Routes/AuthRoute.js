@@ -5,10 +5,20 @@ const User  = require('../models/User')
 router.post('/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+    
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
+    
     const newUser = new User({ username, email, password });
     await newUser.save();
     const token = newUser.generateToken();
@@ -18,12 +28,12 @@ router.post('/signup', async (req, res) => {
         id: newUser._id, 
         username, 
         email,
-        profilePicture: newUser.profilePicture 
+        profilePicture: newUser.profilePicture || null
       }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -31,14 +41,21 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+    
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
+    
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
+    
     const token = user.generateToken();
     res.status(200).json({
       token: token,
@@ -46,12 +63,12 @@ router.post('/login', async (req, res) => {
         id: user._id, 
         username: user.username, 
         email: user.email,
-        profilePicture: user.profilePicture
+        profilePicture: user.profilePicture || null
       }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -63,9 +80,11 @@ router.post('/validate-token', async (req, res) => {
     if (!token) {
       return res.status(400).json({ valid: false, message: 'No token provided' });
     }
+    
     const jwt = require('jsonwebtoken');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);   
     const user = await User.findById(decoded.id).select('-password');
+    
     if (!user) {
       return res.status(400).json({ valid: false, message: 'User not found' });
     }
@@ -76,11 +95,12 @@ router.post('/validate-token', async (req, res) => {
         id: user._id, 
         username: user.username, 
         email: user.email,
-        profilePicture: user.profilePicture
+        profilePicture: user.profilePicture || null
       }
     });
   } catch (error) {
-    res.status(400).json({ valid: false, message: 'Invalid token' });
+    console.error('Token validation error:', error);
+    res.status(400).json({ valid: false, message: 'Invalid token', error: error.message });
   }
 });
 

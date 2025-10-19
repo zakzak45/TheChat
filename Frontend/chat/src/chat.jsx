@@ -324,21 +324,25 @@ const Chat = () => {
   useEffect(() => {
     if (messages.length > 0 && currentUserId) {
       const unseenMessages = messages.filter(msg =>
+        msg._id && // Has valid ID
+        msg.userId && // Has userId
         msg.userId !== currentUserId && // Not sent by me
         !msg.seenByCurrentUser // Not seen by me yet
       );
 
       if (unseenMessages.length > 0) {
-        const unseenIds = unseenMessages.map(msg => msg._id);
-        markMessagesAsSeen(unseenIds);
+        const unseenIds = unseenMessages.map(msg => msg._id).filter(id => id);
+        if (unseenIds.length > 0) {
+          markMessagesAsSeen(unseenIds);
 
-        // Update local state immediately
-        setMessages(prev => prev.map(msg => {
-          if (unseenIds.includes(msg._id)) {
-            return { ...msg, seenByCurrentUser: true };
-          }
-          return msg;
-        }));
+          // Update local state immediately
+          setMessages(prev => prev.map(msg => {
+            if (unseenIds.includes(msg._id)) {
+              return { ...msg, seenByCurrentUser: true };
+            }
+            return msg;
+          }));
+        }
       }
     }
   }, [messages.length, currentUserId]);
@@ -570,18 +574,20 @@ const Chat = () => {
                 </div>
                 <div className="message-body">
                   <div className="message-header">
-                    <strong className="message-name">{msg.user}</strong>
-                    <span className="message-time">
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <strong className="message-name">{msg.user || 'Unknown'}</strong>
+                    {msg.createdAt && (
+                      <span className="message-time">
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                     {msg.emotion && showEmotions && (
                       <span className="emotion-indicator" title={`${msg.emotion.sentiment} (${msg.emotion.score})`}>
                         {msg.emotion.emoji}
                       </span>
                     )}
                     {msg.userId === currentUserId && (
-                      <span className="seen-indicator" title={`Seen by ${msg.seenCount || 0} people`}>
-                        {msg.seenCount > 1 ? '✓✓' : '✓'}
+                      <span className="seen-indicator" title={`Seen by ${(msg.seenCount || 1) - 1} people`}>
+                        {(msg.seenCount || 1) > 1 ? '✓✓' : '✓'}
                       </span>
                     )}
                   </div>

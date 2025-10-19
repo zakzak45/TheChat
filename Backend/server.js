@@ -94,7 +94,13 @@ function analyzeEmotion(text) {
   };
 }
 
-connectDB()
+// Connect to MongoDB before starting server
+connectDB().then(() => {
+  console.log('✅ Database connection established');
+}).catch((err) => {
+  console.error('❌ Failed to connect to database:', err);
+  process.exit(1);
+});
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -293,8 +299,8 @@ app.post("/messages", authenticateToken, upload.single("file"), async (req, res)
     
     res.status(201).json(newMessage);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error('Error creating message:', err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
@@ -311,19 +317,24 @@ app.get("/messages", authenticateToken, async (req, res) => {
             ...msg.toObject(),
             userProfilePicture: null,
             seenByCurrentUser: false,
-            seenCount: msg.seenBy ? msg.seenBy.length : 0
+            seenCount: 0,
+            seenBy: []
           };
         }
         
         const user = await User.findById(msg.userId).select('username profilePicture');
-        const seenByCurrentUser = msg.seenBy && msg.seenBy.some(id => id.toString() === req.user.id);
+        
+        // Safe handling for seenBy array (may not exist in old messages)
+        const seenByArray = msg.seenBy || [];
+        const seenByCurrentUser = seenByArray.length > 0 && seenByArray.some(id => id.toString() === req.user.id);
         
         return {
           ...msg.toObject(),
           user: user ? user.username : msg.user, 
           userProfilePicture: user ? user.profilePicture : null,
           seenByCurrentUser,
-          seenCount: msg.seenBy ? msg.seenBy.length : 0
+          seenCount: seenByArray.length,
+          seenBy: seenByArray // Ensure seenBy is always an array
         };
       })
     );
@@ -331,7 +342,7 @@ app.get("/messages", authenticateToken, async (req, res) => {
     
     res.json(messagesWithCurrentUserData);
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching messages:', err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -346,23 +357,29 @@ app.post("/messages/mark-seen", authenticateToken, async (req, res) => {
       return res.status(400).json({ error: "messageIds array required" });
     }
 
+    // Filter out invalid message IDs
+    const validMessageIds = messageIds.filter(id => id && id.length === 24);
+
+    if (validMessageIds.length === 0) {
+      return res.json({ success: true, message: "No valid message IDs" });
+    }
+
     // Update all messages to add current user to seenBy array if not already there
     await Message.updateMany(
       { 
-        _id: { $in: messageIds },
-        seenBy: { $ne: userId } // Only update if user hasn't seen it yet
+        _id: { $in: validMessageIds }
       },
       { 
-        $addToSet: { seenBy: userId } // Add user ID to seenBy array
+        $addToSet: { seenBy: userId } // Add user ID to seenBy array (won't duplicate)
       }
     );
 
     // Emit socket event to notify other users that messages were seen
-    io.emit('messages-seen', { userId, messageIds });
+    io.emit('messages-seen', { userId, messageIds: validMessageIds });
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('Error marking messages as seen:', err);
     res.status(500).json({ error: "Server error" });
   }
 });
